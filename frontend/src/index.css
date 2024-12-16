@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* カスタムスタイル */
+body {
+  font-family: 'Helvetica', sans-serif;
+  background: #fff;
+  color: #333;
+}
+
+.stamp-float {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: floatUp 1.5s ease-out forwards;
+}
+
+@keyframes floatUp {
+  0% {transform: translate(-50%, 100%) scale(1);}
+  100% {transform: translate(-50%, -200%) scale(1.5); opacity:0;}
+}
+
+.vote-bar-bg {
+  width: 100%;
+  background: #eee;
+  height: 20px;
+  border-radius: 10px;
+  overflow:hidden;
+}
+.vote-bar-fill {
+  background: #e91e63;
+  height: 100%;
+  transition: width 0.3s;
+}
