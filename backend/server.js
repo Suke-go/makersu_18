@@ -12,7 +12,7 @@ const app = express();
 
 // CORS設定をフロントエンドのURLに限定
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: FRONTEND_URL, // フロントエンドのベースURLのみ
   methods: ['GET', 'POST'],
   credentials: true
 }));
@@ -69,7 +69,7 @@ app.get('/status', (req, res) => {
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: FRONTEND_URL, // フロントエンドのURLを指定
+    origin: FRONTEND_URL, // フロントエンドのベースURLのみ
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -169,6 +169,29 @@ io.on('connection', (socket) => {
         io.emit('timeExtended', 10);
       }
     }
+  });
+
+  // 管理者が全てをリセット
+  socket.on('adminResetAll', () => {
+    currentQuestion = null;
+    remainingTime = 0;
+    votes = 0;
+    stampCounts = { like: 0, wow: 0, agree: 0, question: 0 };
+    for (let uid in userVotes) {
+      userVotes[uid] = maxVotesPerUser;
+    }
+    stopTimer();
+    io.emit('allReset');
+  });
+
+  // 管理者が参加者IDを送信
+  socket.on('adminSendParticipantIDs', () => {
+    // 参加者IDを生成（例：ランダムなユニークID）
+    const participantIDs = Object.keys(userVotes).map(socketId => ({
+      socketId,
+      participantID: `P-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+    }));
+    io.emit('participantIDs', participantIDs);
   });
 
   // Socket切断時
