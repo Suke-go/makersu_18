@@ -10,16 +10,40 @@ export default function AdminDashboard() { // デフォルトエクスポート
   const [votes, setVotes] = useState(0);
   const [connections, setConnections] = useState(0);
   const [stampCounts, setStampCounts] = useState({ like: 0, wow: 0, agree: 0, question: 0 });
+  const [loading, setLoading] = useState(false); // ローディング状態
+  const [error, setError] = useState(null); // エラーメッセージ
+
+  // データ取得関数
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [questionsRes, speakersRes] = await Promise.all([
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/questions`),
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/speakers`)
+      ]);
+
+      if (!questionsRes.ok || !speakersRes.ok) {
+        throw new Error('データの取得に失敗しました');
+      }
+
+      const questionsData = await questionsRes.json();
+      const speakersData = await speakersRes.json();
+
+      setQuestions(questionsData.questions);
+      setSpeakers(speakersData.speakers);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || '不明なエラーが発生しました');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/questions`)
-      .then(r => r.json())
-      .then(d => setQuestions(d.questions));
+    fetchData();
 
-    fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/speakers`)
-      .then(r => r.json())
-      .then(d => setSpeakers(d.speakers));
-
+    // Socket.IOイベントのリスナー設定
     socket.on('questionUpdate', (q) => {
       setCurrentQuestion(q);
     });
@@ -35,6 +59,7 @@ export default function AdminDashboard() { // デフォルトエクスポート
       setStampCounts(data.stampCounts);
     });
 
+    // クリーンアップ
     return () => {
       socket.off('questionUpdate');
       socket.off('timeUpdate');
@@ -48,6 +73,7 @@ export default function AdminDashboard() { // デフォルトエクスポート
   function selectQuestion(qid) {
     socket.emit('adminSelectQuestion', qid);
   }
+
   function extendTime(sec) {
     socket.emit('adminExtendTime', sec);
   }
@@ -55,19 +81,48 @@ export default function AdminDashboard() { // デフォルトエクスポート
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold text-primary mb-4">管理者ダッシュボード</h1>
+
+      {/* リフレッシュボタン */}
+      <div className="mb-4">
+        <button
+          onClick={fetchData}
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+          disabled={loading}
+        >
+          {loading ? '更新中...' : 'データを更新'}
+        </button>
+      </div>
+
+      {/* エラーメッセージの表示 */}
+      {error && (
+        <div className="mb-4 text-red-600">
+          {error}
+        </div>
+      )}
+
       <div className="flex space-x-8">
+        {/* 質問選択セクション */}
         <div>
           <h2 className="font-bold">質問選択</h2>
-          <ul>
-            {questions.map(q => (
-              <li key={q.id} className="my-2">
-                <button className="bg-accent text-white px-4 py-1 rounded" onClick={() => selectQuestion(q.id)}>
-                  {q.text}
-                </button>
-              </li>
-            ))}
-          </ul>
+          {loading ? (
+            <p>読み込み中...</p>
+          ) : (
+            <ul>
+              {questions.map(q => (
+                <li key={q.id} className="my-2">
+                  <button
+                    className="bg-accent text-white px-4 py-1 rounded"
+                    onClick={() => selectQuestion(q.id)}
+                  >
+                    {q.text}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
+
+        {/* 現在の質問セクション */}
         <div>
           <h2 className="font-bold mb-2">現在の質問</h2>
           <div className="mb-2">{currentQuestion ? currentQuestion.text : "未選択"}</div>
