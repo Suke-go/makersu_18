@@ -5,6 +5,8 @@ import { socket } from '../utils/socket';
 export default function AdminDashboard() {
   const [questions, setQuestions] = useState([]);
   const [speakers, setSpeakers] = useState([]);
+  const [participants, setParticipants] = useState([]);
+  const [selectedParticipants, setSelectedParticipants] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [time, setTime] = useState(0);
   const [votes, setVotes] = useState(0);
@@ -19,20 +21,23 @@ export default function AdminDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const [questionsRes, speakersRes] = await Promise.all([
+      const [questionsRes, speakersRes, participantsRes] = await Promise.all([
         fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/questions`),
-        fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/speakers`)
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/speakers`),
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/participants`)
       ]);
 
-      if (!questionsRes.ok || !speakersRes.ok) {
+      if (!questionsRes.ok || !speakersRes.ok || !participantsRes.ok) {
         throw new Error('データの取得に失敗しました');
       }
 
       const questionsData = await questionsRes.json();
       const speakersData = await speakersRes.json();
+      const participantsData = await participantsRes.json();
 
       setQuestions(questionsData.questions);
       setSpeakers(speakersData.speakers);
+      setParticipants(participantsData.participants);
     } catch (err) {
       console.error(err);
       setError(err.message || '不明なエラーが発生しました');
@@ -50,7 +55,18 @@ export default function AdminDashboard() {
     });
     socket.on('timeUpdate', (t) => setTime(t));
     socket.on('voteUpdate', ({ votes }) => setVotes(votes));
-    socket.on('connectionsUpdate', (c) => setConnections(c));
+    socket.on('connectionsUpdate', (c) => {
+      setConnections(c);
+      // 接続数が変わったら参加者一覧を再取得
+      fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/participants`)
+        .then(res => res.json())
+        .then(data => {
+          setParticipants(data.participants);
+        })
+        .catch(err => {
+          console.error('参加者一覧の取得に失敗しました:', err);
+        });
+    });
     socket.on('stampUpdate', ({ stampCounts }) => setStampCounts(stampCounts));
 
     socket.on('init', (data) => {
@@ -61,13 +77,18 @@ export default function AdminDashboard() {
       setConnections(data.connections);
     });
 
-    // 管理者からのリセットやID送信の確認
     socket.on('allReset', () => {
       // リセット後の状態をフロントエンドで反映
       setCurrentQuestion(null);
       setTime(0);
       setVotes(0);
       setStampCounts({ like: 0, wow: 0, agree: 0, question: 0 });
+      setSelectedParticipants([]);
+      fetchData(); // 参加者一覧を再取得
+    });
+
+    socket.on('participantSelected', (selected) => {
+      setSelectedParticipants(selected);
     });
 
     socket.on('participantIDs', (data) => {
@@ -85,6 +106,7 @@ export default function AdminDashboard() {
       socket.off('stampUpdate');
       socket.off('init');
       socket.off('allReset');
+      socket.off('participantSelected');
       socket.off('participantIDs');
     };
   }, []);
@@ -113,6 +135,15 @@ export default function AdminDashboard() {
   function handleResetAll() {
     if (window.confirm('本当に全てをリセットしますか？')) {
       socket.emit('adminResetAll');
+    }
+  }
+
+  // 参加者を選択する関数
+  function handleSelectParticipant(socketId) {
+    if (selectedParticipants.includes(socketId)) {
+      socket.emit('adminUnselectParticipant', socketId);
+    } else {
+      socket.emit('adminSelectParticipant', socketId);
     }
   }
 
@@ -214,6 +245,28 @@ export default function AdminDashboard() {
               参加者IDを送る
             </button>
           </div>
+        </div>
+
+        {/* 参加者選択セクション */}
+        <div>
+          <h2 className="font-bold mb-2">参加者選択</h2>
+          {loading ? (
+            <p>読み込み中...</p>
+          ) : (
+            <ul>
+              {participants.map(p => (
+                <li key={p.socketId} className="my-2 flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedParticipants.includes(p.socketId)}
+                    onChange={() => handleSelectParticipant(p.socketId)}
+                    className="mr-2"
+                  />
+                  <span>{p.participantID}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
