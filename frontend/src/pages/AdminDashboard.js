@@ -115,6 +115,10 @@ export default function AdminDashboard() {
   function selectQuestion(qid) {
     socket.emit('adminSelectQuestion', qid);
   }
+  // スピーカー選択関数
+  function selectSpeaker(sid) {
+    socket.emit('adminSelectSpeaker', sid);
+  }
 
   // 時間延長関数
   function extendTime(sec) {
