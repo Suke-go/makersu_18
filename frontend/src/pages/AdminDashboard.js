@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { socket } from '../utils/socket';
 
-export default function AdminDashboard() { // デフォルトエクスポート
+export default function AdminDashboard() {
   const [questions, setQuestions] = useState([]);
   const [speakers, setSpeakers] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -10,8 +10,9 @@ export default function AdminDashboard() { // デフォルトエクスポート
   const [votes, setVotes] = useState(0);
   const [connections, setConnections] = useState(0);
   const [stampCounts, setStampCounts] = useState({ like: 0, wow: 0, agree: 0, question: 0 });
-  const [loading, setLoading] = useState(false); // ローディング状態
-  const [error, setError] = useState(null); // エラーメッセージ
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [extendSeconds, setExtendSeconds] = useState(''); // 拡張秒数
 
   // データ取得関数
   const fetchData = async () => {
@@ -57,6 +58,22 @@ export default function AdminDashboard() { // デフォルトエクスポート
       setTime(data.time);
       setVotes(data.votes);
       setStampCounts(data.stampCounts);
+      setConnections(data.connections);
+    });
+
+    // 管理者からのリセットやID送信の確認
+    socket.on('allReset', () => {
+      // リセット後の状態をフロントエンドで反映
+      setCurrentQuestion(null);
+      setTime(0);
+      setVotes(0);
+      setStampCounts({ like: 0, wow: 0, agree: 0, question: 0 });
+    });
+
+    socket.on('participantIDs', (data) => {
+      // 受信した参加者IDを表示または処理
+      alert(`参加者IDが送信されました:\n${JSON.stringify(data, null, 2)}`);
+      console.log('参加者ID:', data);
     });
 
     // クリーンアップ
@@ -67,15 +84,41 @@ export default function AdminDashboard() { // デフォルトエクスポート
       socket.off('connectionsUpdate');
       socket.off('stampUpdate');
       socket.off('init');
+      socket.off('allReset');
+      socket.off('participantIDs');
     };
   }, []);
 
+  // 質問選択関数
   function selectQuestion(qid) {
     socket.emit('adminSelectQuestion', qid);
   }
 
+  // 時間延長関数
   function extendTime(sec) {
     socket.emit('adminExtendTime', sec);
+  }
+
+  // 時間延長の送信関数
+  function handleExtendTime(e) {
+    e.preventDefault();
+    const sec = parseInt(extendSeconds, 10);
+    if (!isNaN(sec) && sec > 0) {
+      extendTime(sec);
+      setExtendSeconds('');
+    }
+  }
+
+  // 全てをリセットする関数
+  function handleResetAll() {
+    if (window.confirm('本当に全てをリセットしますか？')) {
+      socket.emit('adminResetAll');
+    }
+  }
+
+  // 参加者IDを送る関数
+  function handleSendParticipantIDs() {
+    socket.emit('adminSendParticipantIDs');
   }
 
   return (
@@ -131,6 +174,21 @@ export default function AdminDashboard() { // デフォルトエクスポート
             <button className="bg-green-500 text-white px-3 py-1 rounded" onClick={() => extendTime(10)}>+10秒</button>
             <button className="bg-green-500 text-white px-3 py-1 rounded" onClick={() => extendTime(30)}>+30秒</button>
           </div>
+          {/* 任意の秒数を入力できるフォーム */}
+          <form onSubmit={handleExtendTime} className="flex space-x-2 mb-2">
+            <input
+              type="number"
+              value={extendSeconds}
+              onChange={(e) => setExtendSeconds(e.target.value)}
+              placeholder="秒数"
+              className="border p-1 rounded"
+              min="1"
+              required
+            />
+            <button type="submit" className="bg-green-500 text-white px-3 py-1 rounded">
+              +秒数を追加
+            </button>
+          </form>
           <div className="mb-2">投票数: {votes}</div>
           <div className="mb-2">接続数: {connections}</div>
           <h3 className="font-bold">スタンプ集計</h3>
@@ -140,6 +198,22 @@ export default function AdminDashboard() { // デフォルトエクスポート
             <li>🗳️: {stampCounts.agree}</li>
             <li>❓: {stampCounts.question}</li>
           </ul>
+
+          {/* 新しいボタンセクション */}
+          <div className="mt-4">
+            <button
+              onClick={handleResetAll}
+              className="bg-red-500 text-white px-4 py-2 rounded mr-2"
+            >
+              全てをリセット
+            </button>
+            <button
+              onClick={handleSendParticipantIDs}
+              className="bg-purple-500 text-white px-4 py-2 rounded"
+            >
+              参加者IDを送る
+            </button>
+          </div>
         </div>
       </div>
     </div>
