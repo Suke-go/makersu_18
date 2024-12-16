@@ -38,6 +38,7 @@ let currentQuestionStartTime = null;
 app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    // 実際のアプリケーションでは、JWTやセッションを使用してください
     return res.json({ success: true, token: "dummy-jwt" });
   }
   return res.status(401).json({ success: false, message: "Invalid credentials" });
@@ -107,6 +108,7 @@ io.on('connection', (socket) => {
   // ユーザー個別に投票数初期化
   userVotes[socket.id] = maxVotesPerUser;
 
+  // 初期状態を送信
   socket.emit('init', {
     question: currentQuestion,
     time: remainingTime,
@@ -115,6 +117,7 @@ io.on('connection', (socket) => {
     speaker: currentSpeaker
   });
 
+  // 管理者が質問を選択
   socket.on('adminSelectQuestion', (qId) => {
     const q = questions.find(x => x.id === qId);
     if (q) {
@@ -130,13 +133,17 @@ io.on('connection', (socket) => {
     }
   });
 
+  // 管理者が時間を延長
   socket.on('adminExtendTime', (sec) => {
-    remainingTime += sec;
-    io.emit('timeUpdate', remainingTime);
-    // 延長音再生指示
-    io.emit('timeExtended', sec);
+    if (typeof sec === 'number' && sec > 0) {
+      remainingTime += sec;
+      io.emit('timeUpdate', remainingTime);
+      // 延長音再生指示
+      io.emit('timeExtended', sec);
+    }
   });
 
+  // ユーザーがスタンプを送信
   socket.on('sendStamp', (data) => {
     // data:{type:'like', userId:socket.id}
     if (stampCounts[data.type] !== undefined) {
@@ -147,6 +154,7 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ユーザーが投票を送信
   socket.on('sendVote', () => {
     // もっと聞きたい投票
     if (userVotes[socket.id] > 0) {
@@ -163,6 +171,7 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Socket切断時
   socket.on('disconnect', () => {
     connectionsCount--;
     delete userVotes[socket.id];
