@@ -133,12 +133,12 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 管理者がスピーカーを選択
   socket.on('adminSelectSpeaker', (speakerId) => {
     const speaker = speakers.find(s => s.id === speakerId);
     if (speaker) {
       currentSpeaker = speaker;
-      io.emit('speakerUpdate', currentSpeaker);
+      io.emit('speakerUpdate', currentSpeaker); // 全クライアントに送信
+      console.log(`Speaker updated to: ${speaker.name}`);
     }
   });
 
