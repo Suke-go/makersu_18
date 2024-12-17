@@ -1,4 +1,3 @@
-// backend/server.js
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -26,7 +25,7 @@ let timerInterval = null;
 let connectionsCount = 0;
 let votes = 0;
 let maxVotesPerUser = 3;
-let userVotes = {}; // userId -> votesLeft
+let userVotes = {}; // socketId -> votesLeft
 let stampCounts = {
   like: 0, wow: 0, agree: 0, question: 0
 };
@@ -58,11 +57,11 @@ app.get('/admin/speakers', (req, res) => {
 app.get('/status', (req, res) => {
   res.json({
     question: currentQuestion,
+    speaker: currentSpeaker,
     time: remainingTime,
     votes,
     stampCounts,
-    connections: connectionsCount,
-    speaker: currentSpeaker
+    connections: connectionsCount
   });
 });
 
@@ -111,10 +110,11 @@ io.on('connection', (socket) => {
   // 初期状態を送信
   socket.emit('init', {
     question: currentQuestion,
+    speaker: currentSpeaker,
     time: remainingTime,
     votes,
     stampCounts,
-    speaker: currentSpeaker
+    connections: connectionsCount
   });
 
   // 管理者が質問を選択
@@ -130,6 +130,15 @@ io.on('connection', (socket) => {
       io.emit('questionUpdate', currentQuestion);
       startTimer(q.timeLimit);
       currentQuestionStartTime = Date.now();
+    }
+  });
+
+  // 管理者がスピーカーを選択
+  socket.on('adminSelectSpeaker', (speakerId) => {
+    const speaker = speakers.find(s => s.id === speakerId);
+    if (speaker) {
+      currentSpeaker = speaker;
+      io.emit('speakerUpdate', currentSpeaker);
     }
   });
 
@@ -174,6 +183,7 @@ io.on('connection', (socket) => {
   // 管理者が全てをリセット
   socket.on('adminResetAll', () => {
     currentQuestion = null;
+    currentSpeaker = null;
     remainingTime = 0;
     votes = 0;
     stampCounts = { like: 0, wow: 0, agree: 0, question: 0 };
@@ -182,16 +192,6 @@ io.on('connection', (socket) => {
     }
     stopTimer();
     io.emit('allReset');
-  });
-
-  // 管理者が参加者IDを送信
-  socket.on('adminSendParticipantIDs', () => {
-    // 参加者IDを生成（例：ランダムなユニークID）
-    const participantIDs = Object.keys(userVotes).map(socketId => ({
-      socketId,
-      participantID: `P-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
-    }));
-    io.emit('participantIDs', participantIDs);
   });
 
   // Socket切断時
