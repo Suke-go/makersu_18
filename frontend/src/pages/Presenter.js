@@ -1,85 +1,108 @@
 // frontend/src/pages/Presenter.js
-import React, { useEffect, useState, useRef } from 'react';
-import { socket } from '../utils/socket';
-import CountdownTimer from '../components/CountdownTimer';
-import VoteBar from '../components/VoteBar';
-import StampAnimation from '../components/StampAnimation';
+import React, { useEffect, useState } from 'react';
+import { socket } from '../utils/socket'; // Socket.IOクライアントのインスタンス
 
-import beepSound from '../assets/beep.mp3';
-import extendSound from '../assets/extend.mp3';
-
-export default function Presenter() { // デフォルトエクスポート
-  const [question, setQuestion] = useState(null);
+export default function Presenter() {
+  const [currentSpeaker, setCurrentSpeaker] = useState(null);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
   const [time, setTime] = useState(0);
   const [votes, setVotes] = useState(0);
-  const [connections, setConnections] = useState(0);
   const [stampCounts, setStampCounts] = useState({ like: 0, wow: 0, agree: 0, question: 0 });
-  const [speaker, setSpeaker] = useState(null);
-  const [floatingStamp, setFloatingStamp] = useState(null);
-
-  const beepAudioRef = useRef(null);
-  const extendAudioRef = useRef(null);
+  const [connections, setConnections] = useState(0);
 
   useEffect(() => {
+    // 初期データの受信
     socket.on('init', (data) => {
-      setQuestion(data.question);
+      setCurrentSpeaker(data.speaker);
+      setCurrentQuestion(data.question);
       setTime(data.time);
       setVotes(data.votes);
       setStampCounts(data.stampCounts);
-      setSpeaker(data.speaker);
-    });
-    socket.on('questionUpdate', (q) => setQuestion(q));
-    socket.on('timeUpdate', (t) => setTime(t));
-    socket.on('voteUpdate', ({ votes }) => setVotes(votes));
-    socket.on('connectionsUpdate', (c) => setConnections(c));
-    socket.on('stampUpdate', ({ stampCounts }) => setStampCounts(stampCounts));
-    socket.on('stampAnimation', ({ type, icon }) => {
-      setFloatingStamp(icon);
-      setTimeout(() => setFloatingStamp(null), 1500);
-    });
-    socket.on('lastThreeSeconds', () => {
-      if (beepAudioRef.current) beepAudioRef.current.play();
-    });
-    socket.on('timeExtended', (sec) => {
-      if (extendAudioRef.current) extendAudioRef.current.play();
+      setConnections(data.connections);
     });
 
+    // スピーカー更新イベントのリスニング
+    socket.on('speakerUpdate', (speaker) => {
+      setCurrentSpeaker(speaker);
+      console.log(`Speaker updated to: ${speaker.name}`);
+    });
+
+    // 質問更新イベントのリスニング
+    socket.on('questionUpdate', (question) => {
+      setCurrentQuestion(question);
+      console.log(`Question updated to: ${question.text}`);
+    });
+
+    // 残り時間更新イベントのリスニング
+    socket.on('timeUpdate', (t) => {
+      setTime(t);
+    });
+
+    // 投票数更新イベントのリスニング
+    socket.on('voteUpdate', ({ votes }) => {
+      setVotes(votes);
+    });
+
+    // スタンプ集計更新イベントのリスニング
+    socket.on('stampUpdate', ({ stampCounts }) => {
+      setStampCounts(stampCounts);
+    });
+
+    // 接続数更新イベントのリスニング
+    socket.on('connectionsUpdate', (c) => {
+      setConnections(c);
+    });
+
+    // クリーンアップ
     return () => {
       socket.off('init');
+      socket.off('speakerUpdate');
       socket.off('questionUpdate');
       socket.off('timeUpdate');
       socket.off('voteUpdate');
-      socket.off('connectionsUpdate');
       socket.off('stampUpdate');
-      socket.off('stampAnimation');
-      socket.off('lastThreeSeconds');
-      socket.off('timeExtended');
+      socket.off('connectionsUpdate');
     };
   }, []);
 
   return (
     <div className="p-4">
-      <audio ref={beepAudioRef} src={beepSound} />
-      <audio ref={extendAudioRef} src={extendSound} />
-      <h1 className="text-3xl font-bold text-primary mb-4">プレゼンテーション画面</h1>
-      <div className="flex flex-col items-center">
-        <div className="text-xl mb-2">{speaker ? `${speaker.name} - ${speaker.topic}` : ''}</div>
-        <div className="text-2xl mb-4">{question ? question.text : "質問待ち..."}</div>
-        <CountdownTimer time={time} />
-        <div className="my-4">
-          <VoteBar votes={votes} total={connections} />
-        </div>
-        <div className="my-4 text-lg">
-          <div className="flex space-x-4">
-            <div>👍 {stampCounts.like}</div>
-            <div>😲 {stampCounts.wow}</div>
-            <div>🗳️ {stampCounts.agree}</div>
-            <div>❓ {stampCounts.question}</div>
-          </div>
-        </div>
-        <div className="text-sm text-gray-500">参加者数: {connections}</div>
+      <h1 className="text-2xl font-bold mb-4">プレゼンター画面</h1>
+
+      <div className="mb-4">
+        <h2 className="font-bold">現在の質問:</h2>
+        <p>{currentQuestion ? currentQuestion.text : "未選択"}</p>
       </div>
-      {floatingStamp && <StampAnimation icon={floatingStamp} />}
+
+      <div className="mb-4">
+        <h2 className="font-bold">現在のスピーカー:</h2>
+        <p>{currentSpeaker ? `${currentSpeaker.name} - ${currentSpeaker.topic}` : "未選択"}</p>
+      </div>
+
+      <div className="mb-4">
+        <h2 className="font-bold">残り時間:</h2>
+        <p>{time}s</p>
+      </div>
+
+      <div className="mb-4">
+        <h2 className="font-bold">投票数:</h2>
+        <p>{votes}</p>
+      </div>
+
+      <div className="mb-4">
+        <h2 className="font-bold">スタンプ集計:</h2>
+        <ul>
+          <li>👍: {stampCounts.like}</li>
+          <li>😲: {stampCounts.wow}</li>
+          <li>🗳️: {stampCounts.agree}</li>
+          <li>❓: {stampCounts.question}</li>
+        </ul>
+      </div>
+
+      <div className="mb-4">
+        <h2 className="font-bold">接続数:</h2>
+        <p>{connections}</p>
+      </div>
     </div>
   );
 }
