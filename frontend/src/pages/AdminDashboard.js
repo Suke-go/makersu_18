@@ -5,9 +5,8 @@ import { socket } from '../utils/socket';
 export default function AdminDashboard() {
   const [questions, setQuestions] = useState([]);
   const [speakers, setSpeakers] = useState([]);
-  const [participants, setParticipants] = useState([]);
-  const [selectedParticipants, setSelectedParticipants] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [currentSpeaker, setCurrentSpeaker] = useState(null);
   const [time, setTime] = useState(0);
   const [votes, setVotes] = useState(0);
   const [connections, setConnections] = useState(0);
@@ -21,23 +20,26 @@ export default function AdminDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const [questionsRes, speakersRes, participantsRes] = await Promise.all([
+      const [questionsRes, speakersRes] = await Promise.all([
         fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/questions`),
-        fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/speakers`),
-        fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/participants`)
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/speakers`)
       ]);
 
-      if (!questionsRes.ok || !speakersRes.ok || !participantsRes.ok) {
+      console.log('Questions response status:', questionsRes.status);
+      console.log('Speakers response status:', speakersRes.status);
+
+      if (!questionsRes.ok || !speakersRes.ok) {
         throw new Error('データの取得に失敗しました');
       }
 
       const questionsData = await questionsRes.json();
       const speakersData = await speakersRes.json();
-      const participantsData = await participantsRes.json();
+
+      console.log('Questions data:', questionsData);
+      console.log('Speakers data:', speakersData);
 
       setQuestions(questionsData.questions);
       setSpeakers(speakersData.speakers);
-      setParticipants(participantsData.participants);
     } catch (err) {
       console.error(err);
       setError(err.message || '不明なエラーが発生しました');
@@ -53,61 +55,42 @@ export default function AdminDashboard() {
     socket.on('questionUpdate', (q) => {
       setCurrentQuestion(q);
     });
+    socket.on('speakerUpdate', (speaker) => {
+      setCurrentSpeaker(speaker);
+    });
     socket.on('timeUpdate', (t) => setTime(t));
     socket.on('voteUpdate', ({ votes }) => setVotes(votes));
-    socket.on('connectionsUpdate', (c) => {
-      setConnections(c);
-      // 接続数が変わったら参加者一覧を再取得
-      fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/participants`)
-        .then(res => res.json())
-        .then(data => {
-          setParticipants(data.participants);
-        })
-        .catch(err => {
-          console.error('参加者一覧の取得に失敗しました:', err);
-        });
-    });
+    socket.on('connectionsUpdate', (c) => setConnections(c));
     socket.on('stampUpdate', ({ stampCounts }) => setStampCounts(stampCounts));
 
     socket.on('init', (data) => {
       setCurrentQuestion(data.question);
+      setCurrentSpeaker(data.speaker);
       setTime(data.time);
       setVotes(data.votes);
       setStampCounts(data.stampCounts);
       setConnections(data.connections);
     });
 
+    // 管理者からのリセット確認
     socket.on('allReset', () => {
-      // リセット後の状態をフロントエンドで反映
       setCurrentQuestion(null);
+      setCurrentSpeaker(null);
       setTime(0);
       setVotes(0);
       setStampCounts({ like: 0, wow: 0, agree: 0, question: 0 });
-      setSelectedParticipants([]);
-      fetchData(); // 参加者一覧を再取得
-    });
-
-    socket.on('participantSelected', (selected) => {
-      setSelectedParticipants(selected);
-    });
-
-    socket.on('participantIDs', (data) => {
-      // 受信した参加者IDを表示または処理
-      alert(`参加者IDが送信されました:\n${JSON.stringify(data, null, 2)}`);
-      console.log('参加者ID:', data);
     });
 
     // クリーンアップ
     return () => {
       socket.off('questionUpdate');
+      socket.off('speakerUpdate');
       socket.off('timeUpdate');
       socket.off('voteUpdate');
       socket.off('connectionsUpdate');
       socket.off('stampUpdate');
       socket.off('init');
       socket.off('allReset');
-      socket.off('participantSelected');
-      socket.off('participantIDs');
     };
   }, []);
 
@@ -115,9 +98,10 @@ export default function AdminDashboard() {
   function selectQuestion(qid) {
     socket.emit('adminSelectQuestion', qid);
   }
+
   // スピーカー選択関数
-  function selectSpeaker(sid) {
-    socket.emit('adminSelectSpeaker', sid);
+  function selectSpeaker(speakerId) {
+    socket.emit('adminSelectSpeaker', speakerId);
   }
 
   // 時間延長関数
@@ -142,19 +126,10 @@ export default function AdminDashboard() {
     }
   }
 
-  // 参加者を選択する関数
-  function handleSelectParticipant(socketId) {
-    if (selectedParticipants.includes(socketId)) {
-      socket.emit('adminUnselectParticipant', socketId);
-    } else {
-      socket.emit('adminSelectParticipant', socketId);
-    }
-  }
-
-  // 参加者IDを送る関数
-  function handleSendParticipantIDs() {
-    socket.emit('adminSendParticipantIDs');
-  }
+  // 参加者IDを送る関数（不要な場合は削除）
+  // function handleSendParticipantIDs() {
+  //   socket.emit('adminSendParticipantIDs');
+  // }
 
   return (
     <div className="p-4">
@@ -200,10 +175,32 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* 現在の質問セクション */}
+        {/* スピーカー選択セクション */}
         <div>
-          <h2 className="font-bold mb-2">現在の質問</h2>
-          <div className="mb-2">{currentQuestion ? currentQuestion.text : "未選択"}</div>
+          <h2 className="font-bold">スピーカー選択</h2>
+          {loading ? (
+            <p>読み込み中...</p>
+          ) : (
+            <ul>
+              {speakers.map(s => (
+                <li key={s.id} className="my-2">
+                  <button
+                    className={`px-4 py-1 rounded ${currentSpeaker && currentSpeaker.id === s.id ? 'bg-green-500 text-white' : 'bg-gray-300 text-black'}`}
+                    onClick={() => selectSpeaker(s.id)}
+                  >
+                    {s.name} - {s.topic}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* 現在の状態セクション */}
+        <div>
+          <h2 className="font-bold mb-2">現在の状態</h2>
+          <div className="mb-2">質問: {currentQuestion ? currentQuestion.text : "未選択"}</div>
+          <div className="mb-2">スピーカー: {currentSpeaker ? `${currentSpeaker.name} - ${currentSpeaker.topic}` : "未選択"}</div>
           <div className="mb-2">残り時間: {time}s</div>
           <div className="flex space-x-2 mb-2">
             <button className="bg-green-500 text-white px-3 py-1 rounded" onClick={() => extendTime(10)}>+10秒</button>
@@ -242,35 +239,13 @@ export default function AdminDashboard() {
             >
               全てをリセット
             </button>
-            <button
+            {/* <button
               onClick={handleSendParticipantIDs}
               className="bg-purple-500 text-white px-4 py-2 rounded"
             >
               参加者IDを送る
-            </button>
+            </button> */}
           </div>
-        </div>
-
-        {/* 参加者選択セクション */}
-        <div>
-          <h2 className="font-bold mb-2">参加者選択</h2>
-          {loading ? (
-            <p>読み込み中...</p>
-          ) : (
-            <ul>
-              {participants.map(p => (
-                <li key={p.socketId} className="my-2 flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={selectedParticipants.includes(p.socketId)}
-                    onChange={() => handleSelectParticipant(p.socketId)}
-                    className="mr-2"
-                  />
-                  <span>{p.participantID}</span>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
       </div>
     </div>
