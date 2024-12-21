@@ -293,6 +293,7 @@ const styles = {
     fontSize: '1.75rem', // フォントサイズを大きく設定
     fontWeight: 'bold',
     color: '#333333',
+    textAlign: 'center',
   },
   voteStampCard: {
     display: 'flex',
