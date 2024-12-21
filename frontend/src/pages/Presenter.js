@@ -20,6 +20,7 @@ export default function Presenter() {
       setVotes(data.votes);
       setStampCounts(data.stampCounts);
       setConnections(data.connections);
+      console.log('Initial data received:', data);
     });
 
     // スピーカー更新イベントのリスニング
@@ -37,21 +38,25 @@ export default function Presenter() {
     // 残り時間更新イベントのリスニング
     socket.on('timeUpdate', (t) => {
       setTime(t);
+      console.log('Time updated:', t);
     });
 
     // 投票数更新イベントのリスニング
     socket.on('voteUpdate', ({ votes }) => {
       setVotes(votes);
+      console.log('Votes updated:', votes);
     });
 
     // スタンプ集計更新イベントのリスニング
     socket.on('stampUpdate', ({ stampCounts }) => {
       setStampCounts(stampCounts);
+      console.log('Stamp counts updated:', stampCounts);
     });
 
     // 接続数更新イベントのリスニング
     socket.on('connectionsUpdate', (c) => {
       setConnections(c);
+      console.log('Connections updated:', c);
     });
 
     // クリーンアップ
@@ -116,6 +121,35 @@ export default function Presenter() {
               grid-template-columns: 1fr 1fr;
             }
           }
+
+          .timer-progress {
+            background: #ff8000;
+            height: 100%;
+            border-radius: 20px 0 0 20px;
+            transition: width 0.5s ease-in-out;
+          }
+
+          /* デバッグ用: timer-progress 内のテキスト表示 */
+          .timer-progress span {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1rem;
+            color: #ffffff;
+            pointer-events: none;
+          }
+
+          /* ボタンのホバー効果 */
+          button:hover {
+            transform: scale(1.05);
+          }
+
+          /* ボタンが無効化された時のスタイル */
+          button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
         `}
       </style>
 
@@ -143,9 +177,9 @@ export default function Presenter() {
           <h2 style={styles.cardTitle}>残り時間</h2>
           <div style={styles.timerContainer}>
             <div style={styles.timerBar}>
-              <div
-                style={{ ...styles.timerProgress, width: `${getTimePercentage()}%` }}
-              ></div>
+              <div className="timer-progress" style={{ width: `${getTimePercentage()}%`, position: 'relative' }}>
+                <span>{getTimePercentage().toFixed(0)}%</span>
+              </div>
             </div>
             <span style={styles.timerText}>{time}s</span>
           </div>
@@ -186,6 +220,21 @@ export default function Presenter() {
           </div>
         </div>
 
+        {/* 接続数カード */}
+        <div style={{ ...styles.card, ...styles.connectionCard }}>
+          <span style={styles.iconUsers} role="img" aria-label="ユーザー">👥</span>
+          <div style={styles.connectionInfo}>
+            <h3 style={styles.infoTitle}>接続数</h3>
+            <p style={styles.infoCount}>{connections}</p>
+          </div>
+        </div>
+      </main>
+
+      {/* フッター */}
+      <footer style={styles.footer}>
+        <p>&copy; {new Date().getFullYear()} プレゼンターシステム. All rights reserved.</p>
+      </footer>
+
       {/* スタンプ表示 */}
       {stamp && (
         <div style={stampPopupStyle}>
@@ -215,7 +264,7 @@ const styles = {
     textAlign: 'center',
   },
   title: {
-    fontSize: '3rem',
+    fontSize: '3rem', // フォントサイズを大きく設定
     fontWeight: '800',
     color: '#ffffff',
     textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
@@ -235,14 +284,14 @@ const styles = {
     boxSizing: 'border-box',
   },
   cardTitle: {
-    fontSize: '2rem',
+    fontSize: '2rem', // フォントサイズを大きく設定
     fontWeight: '700',
     color: '#cc0000',
     marginBottom: '15px',
     textAlign: 'center',
   },
   cardContent: {
-    fontSize: '1.75rem',
+    fontSize: '1.75rem', // フォントサイズを大きく設定
     color: '#333333',
     textAlign: 'center',
   },
@@ -261,6 +310,7 @@ const styles = {
     height: '25px',
     marginRight: '20px',
     overflow: 'hidden',
+    position: 'relative', // スパンの位置を相対位置に設定
   },
   timerProgress: {
     background: '#ff8000',
@@ -269,7 +319,7 @@ const styles = {
     transition: 'width 0.5s ease-in-out',
   },
   timerText: {
-    fontSize: '1.75rem',
+    fontSize: '1.75rem', // フォントサイズを大きく設定
     fontWeight: 'bold',
     color: '#333333',
   },
@@ -292,13 +342,13 @@ const styles = {
     textAlign: 'center',
   },
   infoTitle: {
-    fontSize: '1.75rem',
+    fontSize: '1.75rem', // フォントサイズを大きく設定
     fontWeight: '700',
     color: '#cc0000',
     marginBottom: '10px',
   },
   infoCount: {
-    fontSize: '2.5rem',
+    fontSize: '2.5rem', // フォントサイズを大きく設定
     fontWeight: 'bold',
     color: '#333333',
   },
@@ -345,8 +395,6 @@ const styles = {
     color: '#666666',
     fontSize: '1.25rem',
   },
-  
-
   // メディアクエリのための追加スタイル
   '@media (min-width: 768px)': {
     main: {
