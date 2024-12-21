@@ -75,7 +75,7 @@ export default function Presenter() {
     };
   }, []);
 
-  // 残り時間をパーセンテージで計算
+  // 残り時間をパーセンテージで計算（未使用）
   const getTimePercentage = () => {
     return Math.min((time / maxTime) * 100, 100);
   };
@@ -125,34 +125,12 @@ export default function Presenter() {
             }
           }
 
-          .timer-progress {
-            background: #ff8000;
-            height: 100%;
-            border-radius: 20px 0 0 20px;
-            transition: width 0.5s ease-in-out;
-            position: relative;
-          }
-
-          /* スパンのスタイル（デバッグ用） */
-          .timer-progress span {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 1rem;
-            color: #ffffff;
-            pointer-events: none;
-          }
-
-          /* ボタンのホバー効果 */
-          button:hover {
-            transform: scale(1.05);
-          }
-
-          /* ボタンが無効化された時のスタイル */
-          button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
+          /* タイマー表示用スタイル */
+          .timer-text {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #333333;
+            text-align: center;
           }
         `}
       </style>
@@ -176,17 +154,10 @@ export default function Presenter() {
           <p style={styles.cardContent}>{currentSpeaker ? `${currentSpeaker.name} - ${currentSpeaker.topic}` : "スピーカーが選択されていません。"}</p>
         </div>
 
-        {/* タイマーカード */}
-        <div style={{ ...styles.card, ...styles.timerCard }}>
+        {/* 残り時間表示 */}
+        <div style={styles.card}>
           <h2 style={styles.cardTitle}>残り時間</h2>
-          <div style={styles.timerContainer}>
-            <div style={styles.timerBar}>
-              <div className="timer-progress" style={{ width: `${getTimePercentage()}%` }}>
-                <span>{getTimePercentage().toFixed(0)}%</span> {/* デバッグ用のパーセンテージ表示 */}
-              </div>
-            </div>
-            <span style={styles.timerText}>{time}s</span>
-          </div>
+          <p className="timer-text">{time}秒</p>
         </div>
 
         {/* 投票数とスタンプ集計カード */}
@@ -246,6 +217,7 @@ const styles = {
     padding: '20px',
     boxSizing: 'border-box',
     fontFamily: 'Arial, sans-serif',
+    overflow: 'hidden', // スクロールを防止
   },
   header: {
     width: '100%',
@@ -270,63 +242,43 @@ const styles = {
     background: 'rgba(255, 255, 255, 0.85)',
     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
     borderRadius: '12px',
-    padding: '30px',
+    padding: '20px', // パディングを減らしてスクロールを防止
     boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   cardTitle: {
     fontSize: '2rem', // フォントサイズを大きく設定
     fontWeight: '700',
     color: '#cc0000',
-    marginBottom: '15px',
+    marginBottom: '10px', // マージンを減らす
     textAlign: 'center',
   },
   cardContent: {
     fontSize: '1.75rem', // フォントサイズを大きく設定
     color: '#333333',
     textAlign: 'center',
+    margin: '0', // マージンをリセット
   },
   timerCard: {
-    gridColumn: '1 / -1',
-  },
-  timerContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  timerBar: {
-    flex: 1,
-    background: '#e0e0e0',
-    borderRadius: '20px',
-    height: '25px',
-    marginRight: '20px',
-    overflow: 'hidden',
-    position: 'relative', // スパンの位置を相対位置に設定
-  },
-  timerProgress: {
-    background: '#ff8000',
-    height: '100%',
-    borderRadius: '20px 0 0 20px',
-    transition: 'width 0.5s ease-in-out',
-  },
-  timerText: {
-    fontSize: '1.75rem', // フォントサイズを大きく設定
-    fontWeight: 'bold',
-    color: '#333333',
+    // タイマーバーの削除に伴い不要
   },
   voteStampCard: {
     display: 'flex',
     flexDirection: 'column',
+    alignItems: 'center',
   },
   voteSection: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: '20px',
+    marginBottom: '10px', // マージンを減らす
   },
   iconThumbsUp: {
     fontSize: '3rem',
     color: '#cc0000',
-    marginRight: '20px',
+    marginRight: '10px', // マージンを減らす
   },
   voteInfo: {
     textAlign: 'center',
@@ -335,21 +287,23 @@ const styles = {
     fontSize: '1.75rem', // フォントサイズを大きく設定
     fontWeight: '700',
     color: '#cc0000',
-    marginBottom: '10px',
+    marginBottom: '5px', // マージンを減らす
   },
   infoCount: {
     fontSize: '2.5rem', // フォントサイズを大きく設定
     fontWeight: 'bold',
     color: '#333333',
+    margin: '0', // マージンをリセット
   },
   stampSection: {
     textAlign: 'center',
+    width: '100%',
   },
   stampItems: {
     display: 'flex',
     justifyContent: 'center',
     flexWrap: 'wrap',
-    gap: '20px',
+    gap: '10px', // ギャップを減らす
     marginTop: '10px',
   },
   stampItem: {
@@ -358,7 +312,7 @@ const styles = {
   },
   stampIcon: {
     fontSize: '2rem',
-    marginRight: '10px',
+    marginRight: '5px', // マージンを減らす
   },
   stampCount: {
     fontSize: '1.75rem',
@@ -372,18 +326,35 @@ const styles = {
   iconUsers: {
     fontSize: '3rem',
     color: '#ff8000',
-    marginRight: '20px',
+    marginRight: '10px', // マージンを減らす
   },
   connectionInfo: {
     textAlign: 'center',
   },
+  infoTitle: {
+    fontSize: '1.75rem', // フォントサイズを大きく設定
+    fontWeight: '700',
+    color: '#cc0000',
+    marginBottom: '5px', // マージンを減らす
+  },
+  infoCount: {
+    fontSize: '2.5rem', // フォントサイズを大きく設定
+    fontWeight: 'bold',
+    color: '#333333',
+    margin: '0', // マージンをリセット
+  },
   footer: {
     width: '100%',
     maxWidth: '1200px',
-    marginTop: '30px',
+    marginTop: '20px', // マージンを減らす
     textAlign: 'center',
     color: '#666666',
     fontSize: '1.25rem',
+  },
+  connectionCard: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   // メディアクエリのための追加スタイル
   '@media (min-width: 768px)': {
@@ -392,7 +363,7 @@ const styles = {
     },
     voteStampCard: {
       gridTemplateColumns: '1fr 1fr',
-      gap: '40px',
+      gap: '20px', // ギャップを調整
     },
     stampItems: {
       justifyContent: 'flex-start',
