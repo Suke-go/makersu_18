@@ -34,7 +34,6 @@ let currentSpeaker = speakers[0] || { name: "No Speaker", topic: "No Topic" };
 let currentQuestionStartTime = null;
 let hasExtendedTime = false;
 
-
 // 管理者ログインAPI
 app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
@@ -104,8 +103,7 @@ function stopTimer() {
 // Socket接続
 io.on('connection', (socket) => {
   connectionsCount++;
-  const participantCount = Math.max(connectionsCount - 3, 0);
-  io.emit('connectionsUpdate', connectionsCount);
+  io.emit('connectionsUpdate', connectionsCount); // 接続数を全クライアントに送信
 
   // ユーザー個別に投票数初期化
   userVotes[socket.id] = maxVotesPerUser;
@@ -129,12 +127,13 @@ io.on('connection', (socket) => {
       hasExtendedTime = false; // リセット時にフラグをリセット
       stampCounts = { like: 0, wow: 0, agree: 0, question: 0 };
       for (let uid in userVotes) {
-        userVotes[uid] = maxVotesPerUser;
+        userVotes[uid] = maxVotesPerUser; // 修正箇所: socket.id -> uid
       }
       io.emit('questionUpdate', currentQuestion);
       io.emit('voteUpdate', { votes }); 
       startTimer(q.timeLimit);
       currentQuestionStartTime = Date.now();
+      console.log(`New question selected: ${q.text}`);
     }
   });
 
@@ -154,6 +153,7 @@ io.on('connection', (socket) => {
       io.emit('timeUpdate', remainingTime);
       // 延長音再生指示
       io.emit('timeExtended', sec);
+      console.log(`Time extended by ${sec} seconds.`);
     }
   });
 
@@ -165,6 +165,7 @@ io.on('connection', (socket) => {
       io.emit('stampUpdate', { stampCounts });
       // スタンプアニメーション更新
       io.emit('stampAnimation', { type: data.type, icon: stamps.find(s => s.type === data.type)?.icon || "❓" });
+      console.log(`Stamp received: ${data.type}. Count: ${stampCounts[data.type]}`);
     }
   });
 
@@ -175,13 +176,16 @@ io.on('connection', (socket) => {
       userVotes[socket.id]--;
       votes++;
       io.emit('voteUpdate', { votes });
-      // 一定割合超えたら自動延長 (例:2/3超えたら+10秒)
+      console.log('Vote received. Total votes:', votes);
+
+      // 一定割合超えたら自動延長 (例:3/5超えたら+10秒)
       let ratio = votes / connectionsCount;
-      if (ratio > (3 / 5) && timerInterval) {
+      if (ratio > (3 / 5) && !hasExtendedTime && timerInterval) {
         remainingTime += 10;
         io.emit('timeUpdate', remainingTime);
         io.emit('timeExtended', 10);
         hasExtendedTime = true; // 一度だけ延長
+        console.log('Time extended by 10 seconds due to vote ratio.');
       }
     }
   });
@@ -193,11 +197,14 @@ io.on('connection', (socket) => {
     remainingTime = 0;
     votes = 0;
     stampCounts = { like: 0, wow: 0, agree: 0, question: 0 };
+    hasExtendedTime = false; // リセット時にフラグをリセット
     for (let uid in userVotes) {
       userVotes[uid] = maxVotesPerUser;
     }
     stopTimer();
     io.emit('allReset');
+    io.emit('voteUpdate', { votes }); // 投票数リセットを全クライアントに送信
+    console.log('All settings have been reset.');
   });
 
   // Socket切断時
@@ -205,6 +212,7 @@ io.on('connection', (socket) => {
     connectionsCount--;
     delete userVotes[socket.id];
     io.emit('connectionsUpdate', Math.max(connectionsCount - 3, 0));
+    console.log(`Socket ${socket.id} disconnected. Connections: ${connectionsCount}`);
   });
 });
 
