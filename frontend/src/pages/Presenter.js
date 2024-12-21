@@ -11,6 +11,7 @@ export default function Presenter() {
   const [stampCounts, setStampCounts] = useState({ like: 0, wow: 0, agree: 0, question: 0 });
   const [connections, setConnections] = useState(0);
   const [stamp, setStamp] = useState('');
+  
 
   useEffect(() => {
     // 初期データの受信
@@ -75,10 +76,8 @@ export default function Presenter() {
     };
   }, []);
 
-  // 残り時間をパーセンテージで計算（未使用）
-  const getTimePercentage = () => {
-    return Math.min((time / maxTime) * 100, 100);
-  };
+  const votePercentage = connections > 0 ? ((votes / connections) * 100).toFixed(2) : 0;
+
 
   // スタンプ送信関数
   const sendStamp = (type) => {
@@ -162,14 +161,16 @@ export default function Presenter() {
 
         {/* 投票数とスタンプ集計カード */}
         <div style={{ ...styles.card, ...styles.voteStampCard }}>
-          {/* 投票数 */}
-          <div style={styles.voteSection}>
-            <span style={styles.iconThumbsUp}>👍</span>
-            <div style={styles.voteInfo}>
-              <h3 style={styles.infoTitle}>投票数</h3>
-              <p style={styles.infoCount}>{votes}</p>
-            </div>
+        {/* 投票数 */}
+        <div style={styles.voteSection}>
+          <span style={styles.iconThumbsUp}>👍</span>
+          <div style={styles.voteInfo}>
+            <h3 style={styles.infoTitle}>投票数</h3>
+            <p style={styles.infoCount}>
+              {votes} ({votePercentage}%)
+            </p>
           </div>
+        </div>
 
           {/* スタンプ集計 */}
           <div style={styles.stampSection}>
