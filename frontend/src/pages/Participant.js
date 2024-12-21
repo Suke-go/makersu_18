@@ -294,6 +294,7 @@ const styles = {
     fontWeight: 'bold',
     color: '#333333',
     textAlign: 'center',
+    alignItems: 'center',
   },
   voteStampCard: {
     display: 'flex',
