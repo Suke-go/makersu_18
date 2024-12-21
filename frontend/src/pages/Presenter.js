@@ -1,8 +1,6 @@
 // frontend/src/pages/Presenter.js
 import React, { useEffect, useState } from 'react';
 import { socket } from '../utils/socket'; // Socket.IOクライアントのインスタンス
-import { FaThumbsUp, FaQuestion, FaPoll, FaGrinWink } from 'react-icons/fa'; // スタンプアイコン
-import { FiUsers } from 'react-icons/fi'; // 接続数アイコン
 
 export default function Presenter() {
   const [currentSpeaker, setCurrentSpeaker] = useState(null);
@@ -11,6 +9,7 @@ export default function Presenter() {
   const [votes, setVotes] = useState(0);
   const [stampCounts, setStampCounts] = useState({ like: 0, wow: 0, agree: 0, question: 0 });
   const [connections, setConnections] = useState(0);
+  const [stamp, setStamp] = useState('');
 
   useEffect(() => {
     // 初期データの受信
@@ -69,93 +68,294 @@ export default function Presenter() {
 
   // 残り時間をパーセントで計算
   const getTimePercentage = () => {
-    // 最大時間を設定（例: 120秒）
-    const maxTime = 120;
+    const maxTime = 120; // 最大時間（秒）
     return Math.min((time / maxTime) * 100, 100);
   };
 
+  // スタンプ送信関数
+  const sendStamp = (type) => {
+    socket.emit('sendStamp', { type });
+    setStamp(type);
+    setTimeout(() => setStamp(''), 1500);
+  };
+
+  // スタンプ表示用のスタイル
+  const stampPopupStyle = {
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    fontSize: '4rem',
+    animation: 'bounce 1s forwards',
+    zIndex: 1000,
+    color: '#ffffff',
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-r from-red-100 to-orange-300 flex flex-col items-center p-4">
+    <div style={styles.container}>
       {/* ヘッダー */}
-      <header className="w-full max-w-5xl mb-8">
-        <h1 className="text-5xl font-extrabold text-center text-red-800">プレゼンター画面</h1>
+      <header style={styles.header}>
+        <h1 style={styles.title}>プレゼンター画面</h1>
       </header>
 
       {/* メインコンテンツ */}
-      <main className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8">
+      <main style={styles.main}>
         {/* 現在の質問カード */}
-        <div className="bg-white shadow-lg rounded-lg p-8">
-          <h2 className="text-3xl font-semibold mb-4 text-red-700">現在の質問</h2>
-          <p className="text-2xl text-gray-700">{currentQuestion ? currentQuestion.text : "質問が選択されていません。"}</p>
+        <div style={styles.card}>
+          <h2 style={styles.cardTitle}>現在の質問</h2>
+          <p style={styles.cardContent}>{currentQuestion ? currentQuestion.text : "質問が選択されていません。"}</p>
         </div>
 
         {/* 現在のスピーカーカード */}
-        <div className="bg-white shadow-lg rounded-lg p-8">
-          <h2 className="text-3xl font-semibold mb-4 text-red-700">現在のスピーカー</h2>
-          <p className="text-2xl text-gray-700">{currentSpeaker ? `${currentSpeaker.name} - ${currentSpeaker.topic}` : "スピーカーが選択されていません。"}</p>
+        <div style={styles.card}>
+          <h2 style={styles.cardTitle}>現在のスピーカー</h2>
+          <p style={styles.cardContent}>{currentSpeaker ? `${currentSpeaker.name} - ${currentSpeaker.topic}` : "スピーカーが選択されていません。"}</p>
         </div>
 
         {/* タイマーカード */}
-        <div className="bg-white shadow-lg rounded-lg p-8 col-span-1 md:col-span-2">
-          <h2 className="text-3xl font-semibold mb-4 text-red-700">残り時間</h2>
-          <div className="flex items-center">
-            <div className="w-full bg-gray-200 rounded-full h-8 mr-4">
+        <div style={{ ...styles.card, ...styles.timerCard }}>
+          <h2 style={styles.cardTitle}>残り時間</h2>
+          <div style={styles.timerContainer}>
+            <div style={styles.timerBar}>
               <div
-                className="bg-orange-500 h-8 rounded-full transition-all duration-500"
-                style={{ width: `${getTimePercentage()}%` }}
+                style={{ ...styles.timerProgress, width: `${getTimePercentage()}%` }}
               ></div>
             </div>
-            <span className="text-2xl font-bold text-gray-800">{time}s</span>
+            <span style={styles.timerText}>{time}s</span>
           </div>
         </div>
 
         {/* 投票数とスタンプ集計カード */}
-        <div className="bg-white shadow-lg rounded-lg p-8 col-span-1 md:col-span-2 grid grid-cols-2 gap-6">
+        <div style={{ ...styles.card, ...styles.voteStampCard }}>
           {/* 投票数 */}
-          <div className="flex items-center space-x-4">
-            <FaThumbsUp className="text-4xl text-red-500" />
-            <div>
-              <h3 className="text-2xl font-semibold text-red-700">投票数</h3>
-              <p className="text-3xl font-bold text-gray-800">{votes}</p>
+          <div style={styles.voteSection}>
+            <span style={styles.iconThumbsUp}>👍</span>
+            <div style={styles.voteInfo}>
+              <h3 style={styles.infoTitle}>投票数</h3>
+              <p style={styles.infoCount}>{votes}</p>
             </div>
           </div>
 
           {/* スタンプ集計 */}
-          <div className="flex flex-col space-y-4">
-            <h3 className="text-2xl font-semibold text-red-700">スタンプ集計</h3>
-            <div className="flex items-center space-x-3">
-              <FaThumbsUp className="text-3xl text-green-500" />
-              <span className="text-xl text-gray-800">👍: {stampCounts.like}</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <FaGrinWink className="text-3xl text-yellow-500" />
-              <span className="text-xl text-gray-800">😲: {stampCounts.wow}</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <FaPoll className="text-3xl text-purple-500" />
-              <span className="text-xl text-gray-800">🗳️: {stampCounts.agree}</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <FaQuestion className="text-3xl text-red-500" />
-              <span className="text-xl text-gray-800">❓: {stampCounts.question}</span>
+          <div style={styles.stampSection}>
+            <h3 style={styles.infoTitle}>スタンプ集計</h3>
+            <div style={styles.stampItems}>
+              <div style={styles.stampItem}>
+                <span style={styles.stampIcon}>👍</span>
+                <span style={styles.stampCount}>{stampCounts.like}</span>
+              </div>
+              <div style={styles.stampItem}>
+                <span style={styles.stampIcon}>😲</span>
+                <span style={styles.stampCount}>{stampCounts.wow}</span>
+              </div>
+              <div style={styles.stampItem}>
+                <span style={styles.stampIcon}>🗳️</span>
+                <span style={styles.stampCount}>{stampCounts.agree}</span>
+              </div>
+              <div style={styles.stampItem}>
+                <span style={styles.stampIcon}>❓</span>
+                <span style={styles.stampCount}>{stampCounts.question}</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* 接続数カード */}
-        <div className="bg-white shadow-lg rounded-lg p-8 col-span-1 md:col-span-2 flex items-center space-x-4">
-          <FiUsers className="text-4xl text-orange-500" />
-          <div>
-            <h3 className="text-2xl font-semibold text-red-700">接続数</h3>
-            <p className="text-3xl font-bold text-gray-800">{connections}</p>
+        <div style={{ ...styles.card, ...styles.connectionCard }}>
+          <span style={styles.iconUsers}>👥</span>
+          <div style={styles.connectionInfo}>
+            <h3 style={styles.infoTitle}>接続数</h3>
+            <p style={styles.infoCount}>{connections}</p>
           </div>
         </div>
       </main>
 
       {/* フッター */}
-      <footer className="w-full max-w-5xl mt-12">
-        <p className="text-center text-gray-500">&copy; {new Date().getFullYear()} プレゼンターシステム. All rights reserved.</p>
+      <footer style={styles.footer}>
+        <p>&copy; {new Date().getFullYear()} プレゼンターシステム. All rights reserved.</p>
       </footer>
+
+      {/* スタンプ表示 */}
+      {stamp && (
+        <div style={stampPopupStyle}>
+          {stamp === 'like' ? '👍' : stamp === 'wow' ? '😲' : stamp === 'agree' ? '🗳️' : '❓'}
+        </div>
+      )}
+
+      {/* アニメーション用のキー フレーム */}
+      <style>
+        {`
+          @keyframes bounce {
+            0% {
+              transform: translate(-50%, -50%) scale(1);
+              opacity: 1;
+            }
+            50% {
+              transform: translate(-50%, -60%) scale(1.5);
+              opacity: 0.8;
+            }
+            100% {
+              transform: translate(-50%, -50%) scale(1);
+              opacity: 0;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 }
+
+// インラインスタイルの定義
+const styles = {
+  container: {
+    minHeight: '100vh',
+    background: 'linear-gradient(to right, #ffcccc, #ff9966)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '20px',
+    boxSizing: 'border-box',
+    fontFamily: 'Arial, sans-serif',
+  },
+  header: {
+    width: '100%',
+    maxWidth: '1200px',
+    marginBottom: '40px',
+  },
+  title: {
+    fontSize: '3rem',
+    fontWeight: '800',
+    textAlign: 'center',
+    color: '#cc0000',
+  },
+  main: {
+    width: '100%',
+    maxWidth: '1200px',
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+    gap: '40px',
+  },
+  card: {
+    background: 'rgba(255, 255, 255, 0.85)',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+    borderRadius: '12px',
+    padding: '40px',
+  },
+  cardTitle: {
+    fontSize: '1.5rem',
+    fontWeight: '700',
+    color: '#cc0000',
+    marginBottom: '10px',
+  },
+  cardContent: {
+    fontSize: '1.25rem',
+    color: '#333333',
+  },
+  timerCard: {
+    gridColumn: '1 / -1',
+  },
+  timerContainer: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  timerBar: {
+    flex: 1,
+    background: '#e0e0e0',
+    borderRadius: '20px',
+    height: '20px',
+    marginRight: '20px',
+    overflow: 'hidden',
+  },
+  timerProgress: {
+    background: '#ff8000',
+    height: '100%',
+    borderRadius: '20px 0 0 20px',
+    transition: 'width 0.5s ease-in-out',
+  },
+  timerText: {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  voteStampCard: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  voteSection: {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '30px',
+  },
+  iconThumbsUp: {
+    fontSize: '3rem',
+    color: '#cc0000',
+    marginRight: '20px',
+  },
+  voteInfo: {
+    textAlign: 'left',
+  },
+  infoTitle: {
+    fontSize: '1.5rem',
+    fontWeight: '700',
+    color: '#cc0000',
+    marginBottom: '10px',
+  },
+  infoCount: {
+    fontSize: '2.5rem',
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  stampSection: {
+    textAlign: 'left',
+  },
+  stampItems: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '20px',
+  },
+  stampItem: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  stampIcon: {
+    fontSize: '2rem',
+    marginRight: '10px',
+  },
+  stampCount: {
+    fontSize: '1.5rem',
+    color: '#333333',
+  },
+  connectionCard: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  iconUsers: {
+    fontSize: '3rem',
+    color: '#ff8000',
+    marginRight: '20px',
+  },
+  connectionInfo: {
+    textAlign: 'left',
+  },
+  footer: {
+    width: '100%',
+    maxWidth: '1200px',
+    marginTop: '60px',
+    textAlign: 'center',
+    color: '#666666',
+    fontSize: '1rem',
+  },
+  // メディアクエリのための追加スタイル
+  '@media (min-width: 768px)': {
+    main: {
+      gridTemplateColumns: '1fr 1fr',
+    },
+    voteStampCard: {
+      gridTemplateColumns: '1fr 1fr',
+      gap: '40px',
+    },
+    stampItems: {
+      justifyContent: 'flex-start',
+    },
+  },
+};
