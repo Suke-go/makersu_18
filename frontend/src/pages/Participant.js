@@ -145,7 +145,6 @@ export default function Participant() {
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>スタンプを送る</h2>
           <p style={styles.cardContent}>スタンプを送って場を盛り上げよう</p>
-          <p style={styles.cardContent}>みんながもっと聞きたいと投票したら時間が増えます</p>
           <div style={styles.stampButtons}>
             <button
               onClick={() => sendStamp('like')}
@@ -180,6 +179,7 @@ export default function Participant() {
 
         {/* 投票ボタン */}
         <div style={styles.card}>
+          <p style={styles.cardContent}>みんながもっと聞きたいと投票したら時間が増えます</p>
           <button
             onClick={sendVote}
             style={{
@@ -248,6 +248,12 @@ const styles = {
     borderRadius: '12px',
     padding: '30px',
     boxSizing: 'border-box',
+  },
+  timerText: {
+    fontSize: '2rem', // フォントサイズを大きく設定
+    fontWeight: 'bold',
+    color: '#333333',
+    textAlign: 'center',
   },
   cardTitle: {
     fontSize: '2rem', // フォントサイズを大きく設定
