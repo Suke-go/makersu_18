@@ -35,6 +35,12 @@ module.exports = {
       text: "これからの自分の活動にテーマをつけるなら？",
       timeLimit: 15,
       category: "Detail"
+    },
+    {
+      id: 7,
+      text: "free talk",
+      timeLimit: 60,
+      category: "Detail"
     }
   ],
   speakers: [
