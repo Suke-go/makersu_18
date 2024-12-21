@@ -102,7 +102,7 @@ function stopTimer() {
 // Socket接続
 io.on('connection', (socket) => {
   connectionsCount++;
-  const participantCount = Math.max(connectionsCount - 2, 0);
+  const participantCount = Math.max(connectionsCount - 3, 0);
   io.emit('connectionsUpdate', connectionsCount);
 
   // ユーザー個別に投票数初期化
@@ -200,7 +200,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     connectionsCount--;
     delete userVotes[socket.id];
-    io.emit('connectionsUpdate', Math.max(connectionsCount - 2, 0));
+    io.emit('connectionsUpdate', Math.max(connectionsCount - 3, 0));
   });
 });
 
