@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -33,9 +32,8 @@ let stampCounts = {
 
 let currentSpeaker = speakers[0] || { name: "No Speaker", topic: "No Topic" };
 let currentQuestionStartTime = null;
-
-// 新しく追加するフラグ
 let hasExtendedTime = false;
+
 
 // 管理者ログインAPI
 app.post('/admin/login', (req, res) => {
@@ -106,7 +104,8 @@ function stopTimer() {
 // Socket接続
 io.on('connection', (socket) => {
   connectionsCount++;
-  io.emit('connectionsUpdate', connectionsCount); // 接続数を全クライアントに送信
+  const participantCount = Math.max(connectionsCount - 3, 0);
+  io.emit('connectionsUpdate', connectionsCount);
 
   // ユーザー個別に投票数初期化
   userVotes[socket.id] = maxVotesPerUser;
@@ -123,14 +122,12 @@ io.on('connection', (socket) => {
 
   // 管理者が質問を選択
   socket.on('adminSelectQuestion', (qId) => {
-    if (socket.handshake.query.role !== 'admin') return; // 管理者のみ実行可能
-
     const q = questions.find(x => x.id === qId);
     if (q) {
       currentQuestion = q;
       votes = 0;
+      hasExtendedTime = false; // リセット時にフラグをリセット
       stampCounts = { like: 0, wow: 0, agree: 0, question: 0 };
-      hasExtendedTime = false; // 新しい質問時にフラグをリセット
       for (let uid in userVotes) {
         userVotes[uid] = maxVotesPerUser;
       }
@@ -141,10 +138,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 管理者がスピーカーを選択
   socket.on('adminSelectSpeaker', (speakerId) => {
-    if (socket.handshake.query.role !== 'admin') return; // 管理者のみ実行可能
-
     const speaker = speakers.find(s => s.id === speakerId);
     if (speaker) {
       currentSpeaker = speaker;
@@ -155,8 +149,6 @@ io.on('connection', (socket) => {
 
   // 管理者が時間を延長
   socket.on('adminExtendTime', (sec) => {
-    if (socket.handshake.query.role !== 'admin') return; // 管理者のみ実行可能
-
     if (typeof sec === 'number' && sec > 0) {
       remainingTime += sec;
       io.emit('timeUpdate', remainingTime);
@@ -167,65 +159,52 @@ io.on('connection', (socket) => {
 
   // ユーザーがスタンプを送信
   socket.on('sendStamp', (data) => {
-    if (socket.handshake.query.role !== 'participant') return; // 参加者のみ実行可能
-
     // data:{type:'like', userId:socket.id}
     if (stampCounts[data.type] !== undefined) {
       stampCounts[data.type]++;
       io.emit('stampUpdate', { stampCounts });
       // スタンプアニメーション更新
       io.emit('stampAnimation', { type: data.type, icon: stamps.find(s => s.type === data.type)?.icon || "❓" });
-      console.log(`Stamp received: ${data.type}. Count: ${stampCounts[data.type]}`);
     }
   });
 
   // ユーザーが投票を送信
   socket.on('sendVote', () => {
-    if (socket.handshake.query.role !== 'participant') return; // 参加者のみ実行可能
-
+    // もっと聞きたい投票
     if (userVotes[socket.id] > 0) {
       userVotes[socket.id]--;
       votes++;
       io.emit('voteUpdate', { votes });
-      console.log('Vote received. Total votes:', votes);
-
-      // 一定割合超えたら自動延長 (例:3/5超えたら+10秒)
+      // 一定割合超えたら自動延長 (例:2/3超えたら+10秒)
       let ratio = votes / connectionsCount;
-      if (ratio > (3 / 5) && !hasExtendedTime && timerInterval) {
+      if (ratio > (3 / 5) && timerInterval) {
         remainingTime += 10;
         io.emit('timeUpdate', remainingTime);
         io.emit('timeExtended', 10);
         hasExtendedTime = true; // 一度だけ延長
-        console.log('Time extended by 10 seconds.');
       }
     }
   });
 
   // 管理者が全てをリセット
   socket.on('adminResetAll', () => {
-    if (socket.handshake.query.role !== 'admin') return; // 管理者のみ実行可能
-
     currentQuestion = null;
     currentSpeaker = null;
     remainingTime = 0;
     votes = 0;
     stampCounts = { like: 0, wow: 0, agree: 0, question: 0 };
-    hasExtendedTime = false; // リセット時にフラグをリセット
     for (let uid in userVotes) {
       userVotes[uid] = maxVotesPerUser;
     }
     stopTimer();
     io.emit('allReset');
-    io.emit('voteUpdate', { votes }); // 投票数リセットを全クライアントに送信
-    console.log('All settings have been reset.');
   });
 
   // Socket切断時
   socket.on('disconnect', () => {
     connectionsCount--;
     delete userVotes[socket.id];
-    io.emit('connectionsUpdate', connectionsCount);
-    console.log(`Socket ${socket.id} disconnected. Connections: ${connectionsCount}`);
+    io.emit('connectionsUpdate', Math.max(connectionsCount - 3, 0));
   });
 });
 
