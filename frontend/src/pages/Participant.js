@@ -198,7 +198,7 @@ export default function Participant() {
 
       {/* フッター */}
       <footer style={styles.footer}>
-        <p>&copy; {new Date().getFullYear()} Kosuke Shimizu. All rights reserved.<br>フロントはvercel, バックエンドはrender、デザインは時間がないのでGPTを使いました…</p>
+        <p>&copy; {new Date().getFullYear()} Kosuke Shimizu. All rights reserved.</p>
       </footer>
 
       {/* スタンプ表示 */}
