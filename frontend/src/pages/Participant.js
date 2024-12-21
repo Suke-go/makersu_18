@@ -8,7 +8,8 @@ export default function Participant() {
   const [votes, setVotes] = useState(0);
   const [connections, setConnections] = useState(0);
   const [stamp, setStamp] = useState('');
-  const [voteLeft, setVoteLeft] = useState(3);
+  const [voteLeft, setVoteLeft] = useState(1); // 初期値を1に設定
+  const [voteMessage, setVoteMessage] = useState(''); // フィードバックメッセージ用
 
   useEffect(() => {
     // 初期データの受信
@@ -17,12 +18,15 @@ export default function Participant() {
       setTime(data.time);
       setVotes(data.votes);
       setConnections(data.connections);
+      setVoteLeft(1); // 初期化時にvoteLeftを1にリセット
     });
 
     // 質問更新イベントのリスニング
     socket.on('questionUpdate', (q) => {
       setQuestion(q);
-      setVoteLeft(3); // 質問が変わったら投票数をリセット
+      setVoteLeft(1); // 質問が変わったらvoteLeftを1にリセット
+      setVoteMessage('新しい質問が表示されました。投票してください。');
+      setTimeout(() => setVoteMessage(''), 5000); // メッセージを5秒後に消す
     });
 
     // 残り時間更新イベントのリスニング
@@ -57,11 +61,13 @@ export default function Participant() {
   const sendVote = () => {
     if (voteLeft > 0) {
       socket.emit('sendVote');
-      setVoteLeft(voteLeft - 1);
+      setVoteLeft(voteLeft - 1); // voteLeftを1減らす
+      setVoteMessage('投票が完了しました。ありがとうございます！');
+      setTimeout(() => setVoteMessage(''), 3000); // メッセージを3秒後に消す
     }
   };
 
-  // 残り時間をパーセントで計算
+  // 残り時間をパーセンテージで計算
   const getTimePercentage = () => {
     const maxTime = 120; // 最大時間（秒）
     return Math.min((time / maxTime) * 100, 100);
@@ -103,6 +109,14 @@ export default function Participant() {
             .main-content {
               grid-template-columns: 1fr 1fr;
             }
+          }
+
+          button:hover {
+            transform: scale(1.05);
+          }
+
+          button:disabled {
+            opacity: 0.6;
           }
         `}
       </style>
@@ -193,6 +207,7 @@ export default function Participant() {
             もっと聞きたい！
           </button>
           <div style={styles.voteLeft}>残り投票: {voteLeft}票</div>
+          {voteMessage && <div style={styles.voteMessage}>{voteMessage}</div>}
         </div>
       </main>
 
@@ -226,11 +241,11 @@ const styles = {
   header: {
     width: '100%',
     maxWidth: '1200px',
-    marginBottom: '40px',
+    marginBottom: '20px',
     textAlign: 'center',
   },
   title: {
-    fontSize: '2.5rem',
+    fontSize: '3rem', // フォントサイズを大きく設定
     fontWeight: '800',
     color: '#ffffff',
     textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
@@ -240,26 +255,29 @@ const styles = {
     maxWidth: '1200px',
     display: 'grid',
     gridTemplateColumns: '1fr',
-    gap: '40px',
+    gap: '20px',
   },
   card: {
     background: 'rgba(255, 255, 255, 0.85)',
     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
     borderRadius: '12px',
-    padding: '40px',
+    padding: '30px',
     boxSizing: 'border-box',
   },
   cardTitle: {
-    fontSize: '1.5rem',
+    fontSize: '2rem', // フォントサイズを大きく設定
     fontWeight: '700',
     color: '#cc0000',
-    marginBottom: '10px',
+    marginBottom: '15px',
     textAlign: 'center',
   },
   cardContent: {
-    fontSize: '1.25rem',
+    fontSize: '1.75rem', // フォントサイズを大きく設定
     color: '#333333',
     textAlign: 'center',
+  },
+  timerCard: {
+    gridColumn: '1 / -1',
   },
   timerContainer: {
     display: 'flex',
@@ -270,7 +288,7 @@ const styles = {
     flex: 1,
     background: '#e0e0e0',
     borderRadius: '20px',
-    height: '20px',
+    height: '25px',
     marginRight: '20px',
     overflow: 'hidden',
   },
@@ -281,31 +299,36 @@ const styles = {
     transition: 'width 0.5s ease-in-out',
   },
   timerText: {
-    fontSize: '1.5rem',
+    fontSize: '1.75rem', // フォントサイズを大きく設定
     fontWeight: 'bold',
     color: '#333333',
   },
-  connectionSection: {
+  voteStampCard: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  voteSection: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: '20px',
   },
-  iconUsers: {
+  iconThumbsUp: {
     fontSize: '3rem',
-    color: '#ff8000',
+    color: '#cc0000',
     marginRight: '20px',
   },
-  connectionInfo: {
+  voteInfo: {
     textAlign: 'center',
   },
   infoTitle: {
-    fontSize: '1.5rem',
+    fontSize: '1.75rem', // フォントサイズを大きく設定
     fontWeight: '700',
     color: '#cc0000',
     marginBottom: '10px',
   },
   infoCount: {
-    fontSize: '2.5rem',
+    fontSize: '2.5rem', // フォントサイズを大きく設定
     fontWeight: 'bold',
     color: '#333333',
   },
@@ -318,7 +341,7 @@ const styles = {
     marginTop: '20px',
   },
   stampButton: {
-    fontSize: '2rem',
+    fontSize: '2rem', // フォントサイズを大きく設定
     background: 'none',
     border: 'none',
     cursor: 'pointer',
@@ -330,7 +353,7 @@ const styles = {
     borderRadius: '8px',
     color: '#ffffff',
     fontWeight: 'bold',
-    fontSize: '1.25rem',
+    fontSize: '1.25rem', // フォントサイズを大きく設定
     transition: 'background-color 0.3s, cursor 0.3s',
   },
   voteLeft: {
@@ -339,12 +362,32 @@ const styles = {
     color: '#333333',
     textAlign: 'center',
   },
+  voteMessage: {
+    marginTop: '10px',
+    fontSize: '1.25rem',
+    color: '#28a745',
+    textAlign: 'center',
+  },
+  connectionCard: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconUsers: {
+    fontSize: '3rem',
+    color: '#ff8000',
+    marginRight: '20px',
+  },
+  connectionInfo: {
+    textAlign: 'center',
+  },
   footer: {
     width: '100%',
     maxWidth: '1200px',
-    marginTop: '60px',
+    marginTop: '30px',
     textAlign: 'center',
     color: '#666666',
-    fontSize: '1rem',
+    fontSize: '1.25rem',
   },
+  // メディアクエリのための追加スタイルは内部スタイルシートで定義
 };
