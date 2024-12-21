@@ -129,6 +129,7 @@ io.on('connection', (socket) => {
         userVotes[uid] = maxVotesPerUser;
       }
       io.emit('questionUpdate', currentQuestion);
+      io.emit('voteUpdate', { votes }); 
       startTimer(q.timeLimit);
       currentQuestionStartTime = Date.now();
     }
