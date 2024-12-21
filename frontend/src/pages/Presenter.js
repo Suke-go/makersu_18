@@ -167,7 +167,7 @@ export default function Presenter() {
           <div style={styles.voteInfo}>
             <h3 style={styles.infoTitle}>投票数</h3>
             <p style={styles.infoCount}>
-              {votes} ({votePercentage}%)
+              {votePercentage}%
             </p>
           </div>
         </div>
