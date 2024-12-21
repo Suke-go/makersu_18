@@ -52,6 +52,16 @@ module.exports = {
       id: 3,
       name: "佐和田 悠星",
       topic: "遠回りを選んだ大学生"
+    },
+    {
+      id: 4,
+      name: "清水 紘輔",
+      topic: "悠々自適"
+    },
+    {
+      id: 5,
+      name: "田川 裕大",
+      topic: "一般社団法人BEAU 専務理事 / 合同会社KURASO 代表社員"
     }
   ]
 };
