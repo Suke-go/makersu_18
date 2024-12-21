@@ -141,7 +141,6 @@ export default function Participant() {
         </div>
 
 
-
         {/* スタンプボタン */}
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>スタンプを送る</h2>
