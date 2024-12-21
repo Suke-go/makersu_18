@@ -123,7 +123,7 @@ export default function Participant() {
 
       {/* ヘッダー */}
       <header style={styles.header}>
-        <h1 style={styles.title}>参加者画面</h1>
+        <h1 style={styles.title}>Voting</h1>
       </header>
 
       {/* メインコンテンツ */}
@@ -134,33 +134,19 @@ export default function Participant() {
           <p style={styles.cardContent}>{question ? question.text : "質問待ち..."}</p>
         </div>
 
-        {/* 残り時間 */}
+        {/* 残り時間表示 */}
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>残り時間</h2>
-          <div style={styles.timerContainer}>
-            <div style={styles.timerBar}>
-              <div
-                style={{ ...styles.timerProgress, width: `${getTimePercentage()}%` }}
-              ></div>
-            </div>
-            <span style={styles.timerText}>{time}s</span>
-          </div>
+          <p style={styles.timerText}>{time}秒</p>
         </div>
 
-        {/* 接続数 */}
-        <div style={styles.card}>
-          <div style={styles.connectionSection}>
-            <span style={styles.iconUsers} role="img" aria-label="ユーザー">👥</span>
-            <div style={styles.connectionInfo}>
-              <h3 style={styles.infoTitle}>接続数</h3>
-              <p style={styles.infoCount}>{connections}</p>
-            </div>
-          </div>
-        </div>
+
 
         {/* スタンプボタン */}
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>スタンプを送る</h2>
+          <p style={styles.cardContent}>スタンプを送って場を盛り上げよう</p>
+          <p style={styles.cardContent}>みんながもっと聞きたいと投票したら時間が増えます</p>
           <div style={styles.stampButtons}>
             <button
               onClick={() => sendStamp('like')}
@@ -213,7 +199,7 @@ export default function Participant() {
 
       {/* フッター */}
       <footer style={styles.footer}>
-        <p>&copy; {new Date().getFullYear()} プレゼンターシステム. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Kosuke Shimizu. All rights reserved.<br>フロントはvercel, バックエンドはrender、デザインは時間がないのでGPTを使いました…</p>
       </footer>
 
       {/* スタンプ表示 */}
