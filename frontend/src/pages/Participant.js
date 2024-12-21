@@ -67,12 +67,6 @@ export default function Participant() {
     }
   };
 
-  // 残り時間をパーセンテージで計算
-  const getTimePercentage = () => {
-    const maxTime = 120; // 最大時間（秒）
-    return Math.min((time / maxTime) * 100, 100);
-  };
-
   // スタンプ送信時のアニメーション用のスタイル
   const stampPopupStyle = {
     position: 'fixed',
@@ -123,7 +117,7 @@ export default function Participant() {
 
       {/* ヘッダー */}
       <header style={styles.header}>
-        <h1 style={styles.title}>Voting</h1>
+        <h1 style={styles.title}>投票システム</h1>
       </header>
 
       {/* メインコンテンツ */}
