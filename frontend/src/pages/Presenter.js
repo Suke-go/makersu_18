@@ -186,21 +186,6 @@ export default function Presenter() {
           </div>
         </div>
 
-        /*{/* 接続数カード */}
-         <div style={{ ...styles.card, ...styles.connectionCard }}>
-           <span style={styles.iconUsers} role="img" aria-label="ユーザー">👥</span>
-           <div style={styles.connectionInfo}>
-             <h3 style={styles.infoTitle}>接続数</h3>
-             <p style={styles.infoCount}>{connections}</p>
-           </div>
-         </div>
-      </main>
-
-       {/* フッター */}
-       <footer style={styles.footer}>
-         <p>&copy; {new Date().getFullYear()} Kosuke Shimizu. All rights reserved.</p>
-       </footer>*/
-
       {/* スタンプ表示 */}
       {stamp && (
         <div style={stampPopupStyle}>
