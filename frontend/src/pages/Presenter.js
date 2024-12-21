@@ -6,6 +6,7 @@ export default function Presenter() {
   const [currentSpeaker, setCurrentSpeaker] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [time, setTime] = useState(0);
+  const [maxTime, setMaxTime] = useState(120); // maxTime を状態として追加
   const [votes, setVotes] = useState(0);
   const [stampCounts, setStampCounts] = useState({ like: 0, wow: 0, agree: 0, question: 0 });
   const [connections, setConnections] = useState(0);
@@ -17,6 +18,7 @@ export default function Presenter() {
       setCurrentSpeaker(data.speaker);
       setCurrentQuestion(data.question);
       setTime(data.time);
+      setMaxTime(data.maxTime || data.time); // maxTime を設定（サーバーから送信される場合）
       setVotes(data.votes);
       setStampCounts(data.stampCounts);
       setConnections(data.connections);
@@ -32,6 +34,8 @@ export default function Presenter() {
     // 質問更新イベントのリスニング
     socket.on('questionUpdate', (question) => {
       setCurrentQuestion(question);
+      setTime(question.time); // 質問に応じた時間を設定
+      setMaxTime(question.maxTime || question.time); // maxTime を設定
       console.log(`Question updated to: ${question.text}`);
     });
 
@@ -73,7 +77,6 @@ export default function Presenter() {
 
   // 残り時間をパーセンテージで計算
   const getTimePercentage = () => {
-    const maxTime = 120; // 最大時間（秒）
     return Math.min((time / maxTime) * 100, 100);
   };
 
@@ -127,9 +130,10 @@ export default function Presenter() {
             height: 100%;
             border-radius: 20px 0 0 20px;
             transition: width 0.5s ease-in-out;
+            position: relative;
           }
 
-          /* デバッグ用: timer-progress 内のテキスト表示 */
+          /* スパンのスタイル（デバッグ用） */
           .timer-progress span {
             position: absolute;
             left: 50%;
@@ -177,8 +181,8 @@ export default function Presenter() {
           <h2 style={styles.cardTitle}>残り時間</h2>
           <div style={styles.timerContainer}>
             <div style={styles.timerBar}>
-              <div className="timer-progress" style={{ width: `${getTimePercentage()}%`, position: 'relative' }}>
-                <span>{getTimePercentage().toFixed(0)}%</span>
+              <div className="timer-progress" style={{ width: `${getTimePercentage()}%` }}>
+                <span>{getTimePercentage().toFixed(0)}%</span> {/* デバッグ用のパーセンテージ表示 */}
               </div>
             </div>
             <span style={styles.timerText}>{time}s</span>
@@ -219,7 +223,21 @@ export default function Presenter() {
             </div>
           </div>
         </div>
+
+        {/* 接続数カード */}
+        <div style={{ ...styles.card, ...styles.connectionCard }}>
+          <span style={styles.iconUsers} role="img" aria-label="ユーザー">👥</span>
+          <div style={styles.connectionInfo}>
+            <h3 style={styles.infoTitle}>接続数</h3>
+            <p style={styles.infoCount}>{connections}</p>
+          </div>
+        </div>
       </main>
+
+      {/* フッター */}
+      <footer style={styles.footer}>
+        <p>&copy; {new Date().getFullYear()} プレゼンターシステム. All rights reserved.</p>
+      </footer>
 
       {/* スタンプ表示 */}
       {stamp && (
