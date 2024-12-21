@@ -102,6 +102,7 @@ function stopTimer() {
 // Socket接続
 io.on('connection', (socket) => {
   connectionsCount++;
+  const participantCount = Math.max(connectionsCount - 2, 0);
   io.emit('connectionsUpdate', connectionsCount);
 
   // ユーザー個別に投票数初期化
@@ -172,7 +173,7 @@ io.on('connection', (socket) => {
       io.emit('voteUpdate', { votes });
       // 一定割合超えたら自動延長 (例:2/3超えたら+10秒)
       let ratio = votes / connectionsCount;
-      if (ratio > (2 / 3) && timerInterval) {
+      if (ratio > (3 / 5) && timerInterval) {
         remainingTime += 10;
         io.emit('timeUpdate', remainingTime);
         io.emit('timeExtended', 10);
@@ -198,7 +199,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     connectionsCount--;
     delete userVotes[socket.id];
-    io.emit('connectionsUpdate', connectionsCount);
+    io.emit('connectionsUpdate', Math.max(connectionsCount - 2, 0));
   });
 });
 
